@@ -1,0 +1,2155 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>알파GO - 알고리즘 피드에서 친구구하기 | 클라우드 DB 연동형 에듀 대시보드</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 6 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        alphago: {
+                            navy: '#0f172a',
+                            deep: '#030712',
+                            mint: '#10b981',
+                            mintGlow: '#34d399',
+                            yellow: '#fbbf24',
+                            yellowLight: '#fef08a',
+                            blue: '#3b82f6',
+                            purple: '#8b5cf6',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    },
+                    boxShadow: {
+                        'glow-mint': '0 0 25px rgba(16, 185, 129, 0.3)',
+                        'glow-blue': '0 0 25px rgba(59, 130, 246, 0.3)',
+                        'glow-yellow': '0 0 25px rgba(251, 191, 36, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .nav-tab-active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff !important;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+        }
+        .nav-tab-active i {
+            color: #ffffff !important;
+        }
+        .badge-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.15); }
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-white overflow-hidden">
+
+    <!-- Top Header Navigation Bar -->
+    <header class="h-16 border-b border-slate-800 bg-slate-900/95 backdrop-blur px-4 sm:px-6 flex items-center justify-between z-30 shrink-0">
+        <!-- Brand & Product Identity -->
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-amber-400 flex items-center justify-center font-black text-xl text-slate-950 shadow-lg shadow-emerald-500/25">
+                α
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-emerald-400 via-teal-200 to-amber-300 bg-clip-text text-transparent">
+                        알파GO : 알고리즘 피드에서 친구구하기
+                    </h1>
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider hidden sm:inline-block">Cloud DB v2.0</span>
+                </div>
+                <p class="text-[11px] text-slate-400 hidden sm:block">피드폴리스 루미(Rumi) 구출 & 실시간 클라우드 공유 웹하드</p>
+            </div>
+        </div>
+
+        <!-- Live Cloud DB Status & Metric Trackers -->
+        <div class="hidden xl:flex items-center space-x-4 text-xs text-slate-300 bg-slate-950/70 py-1.5 px-4 rounded-xl border border-slate-800">
+            <!-- Cloud Connection Pill -->
+            <button onclick="openCloudConfigModal()" class="flex items-center space-x-2 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 transition" title="클라우드 DB 설정">
+                <span id="cloud-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span id="cloud-status-text" class="text-xs font-bold text-emerald-300">클라우드 DB: 로컬 모드</span>
+                <i class="fa-solid fa-gear text-[10px] text-slate-400 ml-1"></i>
+            </button>
+            <div class="h-3 w-px bg-slate-800"></div>
+            <div class="flex items-center space-x-2">
+                <span>루미 구출률: <strong class="text-emerald-400 font-bold" id="header-rescue-rate">78.5%</strong></span>
+            </div>
+            <div class="h-3 w-px bg-slate-800"></div>
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-code text-cyan-400"></i>
+                <span>공유 웹하드: <strong class="text-slate-100 font-bold" id="header-file-count">5개</strong> 앱</span>
+            </div>
+        </div>
+
+        <!-- Quick Launch Action Buttons -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+            <button onclick="openCloudConfigModal()" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold flex items-center space-x-1.5 transition xl:hidden">
+                <i class="fa-solid fa-cloud text-emerald-400"></i>
+                <span>DB 설정</span>
+            </button>
+            <button onclick="openRumiGameModal()" class="px-3 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-xs flex items-center space-x-1.5 transition shadow-lg shadow-amber-500/20 active:scale-95">
+                <i class="fa-solid fa-gamepad"></i>
+                <span class="hidden xs:inline">루미 구출 플레이</span>
+                <span class="xs:hidden">플레이</span>
+            </button>
+            <button onclick="openUploadModal()" class="px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs flex items-center space-x-1.5 transition">
+                <i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i>
+                <span class="hidden sm:inline">HTML 업로드</span>
+            </button>
+            <button onclick="switchTab('gemini')" class="px-3 sm:px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center space-x-1.5 transition shadow-lg shadow-emerald-600/30">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+                <span>제미나이 캔버스</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Workspace Wrapper -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- Left Sidebar Navigation -->
+        <aside class="w-64 border-r border-slate-800 bg-slate-900/60 flex flex-col justify-between shrink-0 hidden md:flex">
+            <div class="p-4 space-y-1.5">
+                <div class="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>핵심 메뉴</span>
+                    <span class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">FEEDPOLIS</span>
+                </div>
+
+                <!-- Category 1: 친구피드 -->
+                <button onclick="switchTab('feed')" id="nav-feed" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl font-medium text-sm transition-all nav-tab-active group">
+                    <i class="fa-solid fa-mobile-screen-button text-lg text-emerald-300 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-left flex-1">
+                        <div class="font-extrabold">친구피드</div>
+                        <div class="text-[10px] text-slate-200/80">HTML 모바일 게임 실행 & 웹하드</div>
+                    </div>
+                    <span class="bg-black/20 text-white text-[10px] px-2 py-0.5 rounded-full font-bold" id="badge-feed-count">5</span>
+                </button>
+
+                <!-- Category 2: 진행분석 -->
+                <button onclick="switchTab('analytics')" id="nav-analytics" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl font-medium text-sm transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white group">
+                    <i class="fa-solid fa-chart-line text-lg text-cyan-400 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-left flex-1">
+                        <div class="font-bold">진행분석</div>
+                        <div class="text-[10px] text-slate-400">PRD 5대 게이지 & 교육 데이터</div>
+                    </div>
+                </button>
+
+                <!-- Category 3: 피드백 -->
+                <button onclick="switchTab('feedback')" id="nav-feedback" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl font-medium text-sm transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white group">
+                    <i class="fa-solid fa-pen-nib text-lg text-amber-400 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-left flex-1">
+                        <div class="font-bold">피드백</div>
+                        <div class="text-[10px] text-slate-400">5가지 서술형 성찰 일지</div>
+                    </div>
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                </button>
+
+                <!-- Category 4: 보관 -->
+                <button onclick="switchTab('archive')" id="nav-archive" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl font-medium text-sm transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white group">
+                    <i class="fa-solid fa-box-archive text-lg text-purple-400 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-left flex-1">
+                        <div class="font-bold">보관</div>
+                        <div class="text-[10px] text-slate-400">PRD 25종 시드 카드 & 기록소</div>
+                    </div>
+                </button>
+
+                <!-- Category 5: 제미나이 캔버스 -->
+                <button onclick="switchTab('gemini')" id="nav-gemini" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl font-medium text-sm transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white group border border-emerald-500/20 bg-emerald-950/20">
+                    <i class="fa-solid fa-wand-magic-sparkles text-lg text-emerald-400 group-hover:rotate-12 transition-transform"></i>
+                    <div class="text-left flex-1">
+                        <div class="font-bold text-emerald-200">제미나이 캔버스</div>
+                        <div class="text-[10px] text-emerald-400">새 대화창 & 모바일 바이브코딩</div>
+                    </div>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                </button>
+            </div>
+
+            <!-- Team / Rumi Mission Info Card -->
+            <div class="p-4 border-t border-slate-800 bg-slate-900/40">
+                <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-xl shrink-0">
+                        🛟
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="text-xs font-bold text-slate-100 truncate">구출 대상: 루미 (Rumi)</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                            <div class="bg-gradient-to-r from-emerald-400 to-amber-400 h-full rounded-full" style="width: 78%"></div>
+                        </div>
+                        <p class="text-[9px] text-slate-400 mt-1">추천 루프 탈출 5단계 중 4단계 완료</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Panel Center Content Area -->
+        <main class="flex-1 overflow-y-auto bg-slate-950 p-4 sm:p-6 lg:p-8 relative">
+
+            <!-- Mobile Category Switcher -->
+            <div class="md:hidden mb-5">
+                <label class="block text-xs font-bold text-slate-400 mb-1">카테고리 이동</label>
+                <select onchange="switchTab(this.value)" id="mobile-nav-select" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-xl p-3 text-sm font-bold focus:outline-none focus:border-emerald-500">
+                    <option value="feed">📰 친구피드 (HTML 모바일 게임 실행 & 웹하드)</option>
+                    <option value="analytics">📊 진행분석 (PRD 5대 게이지 & 통계)</option>
+                    <option value="feedback">✍️ 피드백 (5가지 서술형 성찰 일지)</option>
+                    <option value="archive">📦 보관 (PRD 25종 시드 카드 & 아카이브)</option>
+                    <option value="gemini">✨ 제미나이 (새 대화창 & 모바일 캔버스)</option>
+                </select>
+            </div>
+
+            <!-- ================= TAB 1: 친구피드 (FRIEND FEED & SHARED WEBHARD) ================= -->
+            <section id="tab-feed" class="tab-content space-y-6">
+
+                <!-- PRD Hero Banner -->
+                <div class="glass-panel rounded-3xl p-6 sm:p-7 border border-slate-800 relative overflow-hidden bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40">
+                    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                        <div class="space-y-2">
+                            <div class="inline-flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-xs text-emerald-300 font-bold">
+                                <i class="fa-solid fa-users"></i>
+                                <span>다자간 참여형 학생 공유 클라우드 웹하드</span>
+                            </div>
+                            <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                                친구피드 : 알고리즘 피드에서 친구구하기
+                            </h2>
+                            <p class="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                                참여 학생들이 PRD 5대 미니게임을 바탕으로 제작한 모바일 웹 게임을 <strong>[▶️ 실행하기]</strong> 버튼을 통해 스마트폰 화면 비율로 직접 플레이하고, 댓글과 좋아요를 남겨보세요! 클라우드 DB와 실시간 동기화됩니다.
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                            <button onclick="manualSyncCloud()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition border border-slate-700 flex items-center space-x-1.5">
+                                <i class="fa-solid fa-rotate text-emerald-400" id="sync-icon"></i>
+                                <span>클라우드 동기화</span>
+                            </button>
+                            <button onclick="openRumiGameModal()" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center space-x-2">
+                                <i class="fa-solid fa-circle-play text-base"></i>
+                                <span>공식 MVP 게임 플레이</span>
+                            </button>
+                            <button onclick="openUploadModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-lg shadow-emerald-600/30 flex items-center space-x-2">
+                                <i class="fa-solid fa-file-arrow-up"></i>
+                                <span>내 HTML 게임 등록</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRD 5-Game Category Filter Tabs & Search -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800">
+                    <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 md:pb-0">
+                        <button onclick="filterFeed('all')" class="feed-filter-btn active px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white transition whitespace-nowrap">전체보기</button>
+                        <button onclick="filterFeed('breaker')" class="feed-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition whitespace-nowrap">🧱 피드 브레이커</button>
+                        <button onclick="filterFeed('racer')" class="feed-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition whitespace-nowrap">🏎️ 출처 고속도로</button>
+                        <button onclick="filterFeed('stairs')" class="feed-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition whitespace-nowrap">🪜 맥락의 계단</button>
+                        <button onclick="filterFeed('maze')" class="feed-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition whitespace-nowrap">🧩 확증편향 미로</button>
+                        <button onclick="filterFeed('rescue')" class="feed-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition whitespace-nowrap">🛟 친구구하기 작전</button>
+                    </div>
+                    <div class="relative w-full md:w-64 shrink-0">
+                        <input type="text" id="feed-search" onkeyup="searchFeed()" placeholder="게임 제목, 모둠, 키워드 검색..." class="w-full bg-slate-950 border border-slate-700 text-xs text-slate-100 rounded-xl pl-9 pr-3.5 py-2.5 focus:outline-none focus:border-emerald-500">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-xs text-slate-500"></i>
+                    </div>
+                </div>
+
+                <!-- Feed Games Grid -->
+                <div id="feed-posts-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <!-- Feed posts inserted dynamically -->
+                </div>
+            </section>
+
+            <!-- ================= TAB 2: 진행분석 (PROGRESS ANALYTICS) ================= -->
+            <section id="tab-analytics" class="tab-content hidden space-y-6">
+
+                <!-- Header -->
+                <div class="glass-panel rounded-3xl p-6 border border-slate-800">
+                    <h2 class="text-2xl font-black text-white mb-1.5">진행분석 : PRD 5대 지표 & 모둠별 진행도</h2>
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        PRD 요구사항에 명시된 <strong>친구 신뢰도, 정보 체력, 검증 에너지, 알고리즘 편향도</strong> 상태값 및 7대 미디어 리터러시 행동(멈춤·확인·맥락·비교·구분·책임·알고리즘 이해)을 클라우드 DB 데이터와 함께 정량적으로 분석합니다.
+                    </p>
+                </div>
+
+                <!-- 4 Major PRD Status Gauges Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Gauge 1: Friend Trust -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4.5 space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400 font-semibold">친구 신뢰도 (Trust)</span>
+                            <span class="text-amber-400 font-bold bg-amber-400/10 px-2 py-0.5 rounded">PRD 핵심</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <span class="text-3xl font-black text-amber-300" id="stat-trust-val">86</span>
+                            <span class="text-xs text-slate-400">/ 100 pt</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div class="bg-amber-400 h-full rounded-full" style="width: 86%"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400">근거 있는 판단 시 증가, 무분별 공유 시 감소</p>
+                    </div>
+
+                    <!-- Gauge 2: Info Stamina -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4.5 space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400 font-semibold">정보 체력 (Health)</span>
+                            <span class="text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded">안전 게이지</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <span class="text-3xl font-black text-emerald-400" id="stat-hp-val">92</span>
+                            <span class="text-xs text-slate-400">/ 100 HP</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div class="bg-emerald-400 h-full rounded-full" style="width: 92%"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400">조작정보/자극적 미디어 무비판 수용 시 감소</p>
+                    </div>
+
+                    <!-- Gauge 3: Verification Energy -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4.5 space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400 font-semibold">검증 에너지 (Verify)</span>
+                            <span class="text-cyan-400 font-bold bg-cyan-400/10 px-2 py-0.5 rounded">출처 탐색</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <span class="text-3xl font-black text-cyan-400" id="stat-energy-val">74</span>
+                            <span class="text-xs text-slate-400">/ 100 EP</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div class="bg-cyan-400 h-full rounded-full" style="width: 74%"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400">원문 및 날짜 확인, 팩트체크에 소모되는 자원</p>
+                    </div>
+
+                    <!-- Gauge 4: Algorithm Bias Rate -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4.5 space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400 font-semibold">알고리즘 편향도 (Bias)</span>
+                            <span class="text-rose-400 font-bold bg-rose-400/10 px-2 py-0.5 rounded">위험 지표</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <span class="text-3xl font-black text-rose-400" id="stat-bias-val">34%</span>
+                            <span class="text-xs text-slate-400">목표: 60% 미만</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div class="bg-rose-500 h-full rounded-full" style="width: 34%"></div>
+                        </div>
+                        <p class="text-[10px] text-slate-400">비슷한 주장만 반복 소비할 경우 상승</p>
+                    </div>
+                </div>
+
+                <!-- Charts Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Chart 1: 7대 미디어 리터러시 행동 실천율 (7 cols) -->
+                    <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-100 text-sm flex items-center space-x-2">
+                                <i class="fa-solid fa-square-poll-vertical text-emerald-400"></i>
+                                <span>PRD 7대 핵심 행동 수행율 (%)</span>
+                            </h3>
+                            <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">전체 참여 학생 평균</span>
+                        </div>
+                        <div class="relative flex-1 min-h-[260px]">
+                            <canvas id="literacyActionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 2: 5개 미니게임 모둠별 완성도 Radar (5 cols) -->
+                    <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-100 text-sm flex items-center space-x-2">
+                                <i class="fa-solid fa-compass-drafting text-cyan-400"></i>
+                                <span>5개 미니게임 챕터 달성도</span>
+                            </h3>
+                            <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">레이더 분석</span>
+                        </div>
+                        <div class="relative flex-1 min-h-[260px]">
+                            <canvas id="miniGameRadarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRD Educational Insight Notice -->
+                <div class="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-amber-950/30 border border-emerald-800/40 rounded-2xl p-5">
+                    <div class="flex items-start space-x-3.5">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-lg shrink-0 mt-0.5">
+                            <i class="fa-solid fa-lightbulb"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-emerald-200 text-sm">알파GO 바이브코딩 교육 진단 인사이트</h4>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                "학생들의 <strong>[3초 멈춤]</strong>과 <strong>[출처 날짜 확인]</strong> 행동 선택 비율이 지난 세션 대비 +24% 증가했습니다. 특히 1모둠의 '피드 브레이커'와 3모둠의 '출처 고속도로 레이서' 게임에서 감정 미터를 낮추는 보류 행동이 높게 관찰되었습니다. 반면 통계 수치의 기준 분모를 따져보는 <strong>[맥락의 계단]</strong> 파트의 난이도 완화 및 힌트 프롬프트 수정이 권장됩니다."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= TAB 3: 피드백 (5가지 서술형 성찰 작성) ================= -->
+            <section id="tab-feedback" class="tab-content hidden space-y-6">
+
+                <!-- Header -->
+                <div class="glass-panel rounded-3xl p-6 border border-slate-800">
+                    <h2 class="text-2xl font-black text-white mb-1.5">피드백 및 5가지 서술형 성찰 일지</h2>
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        PRD에 기반하여 우리 모둠이 제작한 게임과 바이브코딩 과정을 5가지 질문에 따라 깊이 있게 성찰하고 기록합니다. 제출된 내용은 클라우드 DB에 안전하게 보관되어 다른 참여자들과 공유됩니다.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                    <!-- Feedback Form Column (7 cols) -->
+                    <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-extrabold text-white text-base flex items-center space-x-2">
+                                <i class="fa-solid fa-feather-pointed text-amber-400"></i>
+                                <span>모둠 성찰 일지 작성</span>
+                            </h3>
+                            <span class="text-xs text-emerald-400 font-mono flex items-center space-x-1">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <span>Cloud Sync Enabled</span>
+                            </span>
+                        </div>
+
+                        <form id="feedback-form" onsubmit="handleFeedbackSubmit(event)" class="space-y-4">
+                            <!-- Group Selector -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1.5">작성 모둠 선택 <span class="text-red-400">*</span></label>
+                                <select id="fb-group-select" class="w-full bg-slate-950 border border-slate-700 text-xs text-slate-100 rounded-xl p-3 focus:outline-none focus:border-emerald-500">
+                                    <option value="1모둠 (알파GO 루미구조대)">1모둠 (알파GO 루미구조대)</option>
+                                    <option value="2모둠 (출처 레이서즈)">2모둠 (출처 레이서즈)</option>
+                                    <option value="3모둠 (맥락 탐정단)">3모둠 (맥락 탐정단)</option>
+                                    <option value="4모둠 (미로 브레이커)">4모둠 (미로 브레이커)</option>
+                                    <option value="5모둠 (방패 메이커)">5모둠 (방패 메이커)</option>
+                                    <option value="6모둠 (팩트체크 가디언즈)">6모둠 (팩트체크 가디언즈)</option>
+                                </select>
+                            </div>
+
+                            <!-- Q1 -->
+                            <div>
+                                <label class="block text-xs font-bold text-emerald-300 mb-1.5 leading-snug">
+                                    1. 우리의 게임에서 강조한 교육 내용은? <span class="text-red-400">*</span>
+                                </label>
+                                <textarea id="fb-q1" required rows="2" placeholder="예: 분노와 공포를 유발하는 자극적 제목을 보았을 때 즉시 공유하지 않고 3초간 멈추는 습관과 원출처 작성자를 확인하는 중요성을 강조했습니다." class="w-full bg-slate-950 border border-slate-700 text-xs text-slate-100 rounded-xl p-3 focus:outline-none focus:border-emerald-500 leading-relaxed"></textarea>
+                            </div>
+
+                            <!-- Q2 -->
+                            <div>
+                                <label class="block text-xs font-bold text-amber-300 mb-1.5 leading-snug">
+                                    2. 게임에서 아쉬운 부분은? <span class="text-red-400">*</span>
+                                </label>
+                                <textarea id="fb-q2" required rows="2" placeholder="예: 카트 레이싱 조작 시 모바일 터치 반응 속도가 약간 늦었고, 통계 카드의 비교 기준을 찾는 제한 시간이 너무 짧다는 의견이 있었습니다." class="w-full bg-slate-950 border border-slate-700 text-xs text-slate-100 rounded-xl p-3 focus:outline-none focus:border-amber-500 leading-relaxed"></textarea>
+                            </div>
+
+                            <!-- Q3 -->
+                            <div>
+                                <label class="block text-xs font-bold text-cyan-300 mb-1.5 leading-snug">
+                                    3. 몇 번 수정했으면 수정한 이유는? <span class="text-red-400">*</span>
+                                </label>
+                                <textarea id="fb-q3" required rows="2" placeholder="예: 총 4번 수정했습니다. 1차엔 감정 미터 상승 속도 완화, 2차엔 모바일 세로 비율 최적화, 3차엔 제미나이 프롬프트 데이터셋 주입, 4차엔 실패 시 격려 피드백 문구를 개선했습니다." class="w-full bg-slate-950 border border-slate-700 text-xs text-slate-100 rounded-xl p-3 focus:outline-none focus:border-cyan-500 leading-relaxed"></textarea>
+                            </div>
+
+                            <!-- Q4 -->
+                            <div>
+                                <label class="block text-xs font-bold text-purple-300 mb-1.5 leading-snug">
+                                    4. 추천하는 타모둠 게임과 이유? <span class="text-red-400">*</span>
+                                </label>
+                                <textarea id="fb-q4" required rows="2" placeholder="예: 3모둠의 '맥락의 계단'을 추천합니다. 잘린 문장과 왜곡된 통계 수치의 앞뒤 맥락을 직접 퍼즐 맞추듯 복원하는 인터랙션이 교육적이면서도 몰입감이 높았습니다." class="w-full bg-slate-950 border border-slate-700 text-xs text-slate-100 rounded-xl p-3 focus:outline-none focus:border-purple-500 leading-relaxed"></textarea>
+                            </div>
+
+                            <!-- Q5 -->
+                            <div>
+                                <label class="block text-xs font-bold text-rose-300 mb-1.5 leading-snug">
+                                    5. 소감을 자유롭게 작성 <span class="text-red-400">*</span>
+                                </label>
+                                <textarea id="fb-q5" required rows="2" placeholder="예: 바이브코딩을 활용하여 복잡한 코딩 문법 대신 미디어 리터러시 규칙과 게이지 설계를 직접 지정해보며, 알고리즘 피드의 함정을 메타적으로 이해할 수 있어 매우 유익했습니다." class="w-full bg-slate-950 border border-slate-700 text-xs text-slate-100 rounded-xl p-3 focus:outline-none focus:border-rose-500 leading-relaxed"></textarea>
+                            </div>
+
+                            <button type="submit" class="w-full py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-amber-500 hover:opacity-95 text-slate-950 font-black text-sm rounded-xl transition shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>성찰 피드백 제출 및 클라우드 공유</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Submitted Feedback Records (5 cols) -->
+                    <div class="lg:col-span-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-white text-base flex items-center space-x-2">
+                                <i class="fa-solid fa-comments text-emerald-400"></i>
+                                <span>제출된 모둠 피드백 목록</span>
+                            </h3>
+                            <span class="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full font-bold" id="feedback-list-count">총 2건</span>
+                        </div>
+
+                        <div id="submitted-feedback-container" class="space-y-4 max-h-[750px] overflow-y-auto pr-1">
+                            <!-- Feedback Cards inserted dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- ================= TAB 4: 보관 (ARCHIVE & PRD SEED BANK) ================= -->
+            <section id="tab-archive" class="tab-content hidden space-y-6">
+
+                <!-- Header -->
+                <div class="glass-panel rounded-3xl p-6 border border-slate-800">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-black text-white mb-1.5">프로젝트 보관소 & PRD 25종 시드 카드</h2>
+                            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                                PRD 8절에 정의된 7개 카드 유형(사실, 의견, 풍자, 광고, 조작 이미지, 통계, 오래된 사실)의 25개 시드 데이터와 업로드된 HTML 소스를 보관합니다.
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="filterArchive('all')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white archive-btn">전체보기</button>
+                            <button onclick="filterArchive('cards')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 archive-btn">🃏 PRD 시드 카드</button>
+                            <button onclick="filterArchive('files')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 archive-btn">📁 HTML 소스</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Archive Grid -->
+                <div id="archive-display-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic Archive Cards -->
+                </div>
+            </section>
+
+            <!-- ================= TAB 5: 제미나이 캔버스 (GEMINI AI STUDIO & VIBE-CODING BUILDER) ================= -->
+            <section id="tab-gemini" class="tab-content hidden h-[calc(100vh-100px)] flex flex-col space-y-3">
+
+                <!-- Gemini Studio Top Toolbar -->
+                <div class="bg-slate-900 border border-emerald-900/60 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-slate-950 font-black shadow-md">
+                            ✨
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h3 class="font-bold text-white text-sm">제미나이 AI 스튜디오 : 모바일 바이브코딩 캔버스</h3>
+                                <span class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.2 rounded font-mono">gemini-3-flash-preview</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400">PRD 5대 미니게임 조건을 설정하고 프롬프트를 보내면 우측 실시간 캔버스에서 즉시 플레이 가능합니다!</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="clearGeminiSession()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>새 대화 시작</span>
+                        </button>
+                        <button onclick="publishCanvasToSharedFeed()" class="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md shadow-emerald-600/30">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>클라우드 피드에 게시하기</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Split Workspace (Left: Prompt & Condition Builder, Right: Live Mobile Canvas) -->
+                <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
+
+                    <!-- Left: Prompt Generator & AI Chat (5 cols) -->
+                    <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col overflow-hidden">
+
+                        <!-- Vibe-Coding Parameter Builder Accordion -->
+                        <div class="bg-slate-950/80 p-3.5 border-b border-slate-800 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold text-emerald-400 flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-sliders"></i>
+                                    <span>바이브코딩 조건 커스텀 설계기</span>
+                                </span>
+                                <span class="text-[10px] text-slate-400">PRD 14절 연동</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-[11px]">
+                                <div>
+                                    <label class="block text-slate-400 font-semibold mb-0.5">기반 미니게임</label>
+                                    <select id="vibe-game-type" onchange="updatePromptTemplate()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-1.5">
+                                        <option value="breaker">1. 피드 브레이커 (벽돌깨기)</option>
+                                        <option value="racer">2. 출처 고속도로 (레이싱)</option>
+                                        <option value="stairs">3. 맥락의 계단 (문맥 복원)</option>
+                                        <option value="maze">4. 확증편향 미로 (메모리)</option>
+                                        <option value="rescue" selected>5. 친구구하기 작전 (종합선택)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-slate-400 font-semibold mb-0.5">난이도 / 게이지 속도</label>
+                                    <select id="vibe-difficulty" onchange="updatePromptTemplate()" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-1.5">
+                                        <option value="easy">초급 (감정미터 80% 허용, 힌트 제공)</option>
+                                        <option value="normal" selected>중급 (PRD 표준 밸런스)</option>
+                                        <option value="hard">고급 (타이머 5초, 페널티 2배)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Stream Message History -->
+                        <div id="gemini-chat-history" class="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs leading-relaxed">
+                            <!-- Initial Greeting -->
+                            <div class="flex items-start space-x-2.5">
+                                <div class="w-7 h-7 rounded-xl bg-emerald-600 flex items-center justify-center text-slate-950 font-bold text-xs shrink-0 shadow">
+                                    ✨
+                                </div>
+                                <div class="bg-emerald-950/40 border border-emerald-800/40 rounded-2xl p-3.5 text-slate-200 max-w-[90%] space-y-1.5">
+                                    <p class="font-extrabold text-emerald-300">안녕하세요! 제미나이 바이브코딩 에이전트입니다. 🤖</p>
+                                    <p class="text-slate-300">
+                                        PRD 설계를 기반으로 모바일 우선 반응형 교육용 웹 게임을 생성해 드립니다.
+                                    </p>
+                                    <p class="text-[11px] text-emerald-400">
+                                        아래 프리셋을 누르거나 커스텀 조건을 작성해 전송하면, 오른쪽 <strong>실시간 캔버스</strong>에서 모바일 화면으로 즉시 실행됩니다!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Presets Carousel -->
+                        <div class="p-2 border-t border-slate-800 bg-slate-950/50 flex space-x-1.5 overflow-x-auto text-[11px]">
+                            <button onclick="injectPresetPrompt(1)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 whitespace-nowrap">
+                                🧱 피드 브레이커 생성
+                            </button>
+                            <button onclick="injectPresetPrompt(2)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 whitespace-nowrap">
+                                🏎️ 출처 고속도로 레이서
+                            </button>
+                            <button onclick="injectPresetPrompt(3)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 whitespace-nowrap">
+                                🪜 맥락의 계단 퍼즐
+                            </button>
+                            <button onclick="injectPresetPrompt(4)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 whitespace-nowrap">
+                                🛟 루미 구출 종합 작전
+                            </button>
+                        </div>
+
+                        <!-- Chat Input Box -->
+                        <div class="p-3 border-t border-slate-800 bg-slate-950">
+                            <form onsubmit="handleGeminiPromptSubmit(event)" class="flex items-center space-x-2">
+                                <input type="text" id="gemini-input-text" placeholder="게임 규칙, 게이지 조건, 미디어 리터러시 지시사항 입력..." class="flex-1 bg-slate-900 border border-slate-700 text-xs text-slate-100 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-emerald-500">
+                                <button type="submit" id="gemini-send-btn" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold transition flex items-center space-x-1.5 shrink-0 shadow-md shadow-emerald-600/30">
+                                    <span>생성</span>
+                                    <i class="fa-solid fa-paper-plane text-[10px]"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Canvas Execution Window (7 cols) -->
+                    <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col overflow-hidden relative">
+
+                        <!-- Canvas Header Toolbar -->
+                        <div class="px-4 py-2.5 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between text-xs">
+                            <div class="flex items-center space-x-2.5 text-slate-200 font-bold">
+                                <i class="fa-solid fa-mobile-screen text-emerald-400 text-sm"></i>
+                                <span>실시간 대화창 캔버스 (Live Execution Canvas)</span>
+                                <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono hidden sm:inline">Responsive Preview</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="setCanvasViewMode('mobile')" title="모바일 뷰" class="text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800/80">
+                                    <i class="fa-solid fa-mobile"></i>
+                                </button>
+                                <button onclick="setCanvasViewMode('full')" title="전체 뷰" class="text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800/80">
+                                    <i class="fa-solid fa-desktop"></i>
+                                </button>
+                                <button onclick="reloadCanvasFrame()" title="새로고침" class="text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800/80">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </button>
+                                <button onclick="toggleCanvasFullScreen()" title="전체화면" class="text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800/80">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Canvas Frame Container -->
+                        <div class="flex-1 bg-slate-950 flex items-center justify-center p-2 relative overflow-hidden" id="canvas-main-wrapper">
+                            <div id="canvas-device-container" class="w-full h-full transition-all duration-300 flex items-center justify-center">
+                                <iframe id="gemini-live-iframe" class="w-full h-full rounded-xl border border-slate-800 bg-slate-900 shadow-2xl" title="Live Vibe-Coding Game Canvas"></iframe>
+                            </div>
+                        </div>
+
+                        <!-- Canvas Status Footer -->
+                        <div class="px-4 py-1.5 bg-slate-900/90 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+                            <span id="canvas-status-display" class="flex items-center space-x-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                <span>상태: 캔버스 준비 완료</span>
+                            </span>
+                            <span id="canvas-size-display" class="font-mono text-slate-500">HTML Code: Ready</span>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ================= MODAL 1: FULL PLAYABLE RUMI RESCUE GAME (PRD MVP) ================= -->
+    <div id="rumi-game-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-2 sm:p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+            <!-- Modal Header -->
+            <div class="h-14 bg-slate-950 border-b border-slate-800 px-5 flex items-center justify-between shrink-0">
+                <div class="flex items-center space-x-3">
+                    <span class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span>
+                    <h3 class="font-black text-white text-sm sm:text-base flex items-center space-x-2">
+                        <span>🛟 알고리즘 피드에서 친구구하기 : 루미(Rumi) 구출 대작전</span>
+                    </h3>
+                    <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono hidden sm:inline">알파GO 공식 MVP</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="downloadActiveGameHtml()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center space-x-1.5">
+                        <i class="fa-solid fa-download"></i>
+                        <span class="hidden sm:inline">HTML 다운로드</span>
+                    </button>
+                    <button onclick="closeRumiGameModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white flex items-center justify-center transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Game Frame -->
+            <div class="flex-1 bg-slate-950 p-2 relative overflow-hidden">
+                <iframe id="rumi-interactive-iframe" class="w-full h-full rounded-2xl border border-slate-800 bg-white" title="Playable Media Literacy Game"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL 2: UPLOAD HTML MODAL ================= -->
+    <div id="upload-game-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-extrabold text-white text-base sm:text-lg flex items-center space-x-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i>
+                    <span>공유 클라우드 웹하드에 HTML 게임 업로드</span>
+                </h3>
+                <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form onsubmit="handleUploadSubmit(event)" class="space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">참여 모둠 선택</label>
+                    <select id="upload-group" class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-emerald-500">
+                        <option value="1모둠 (알파GO 루미구조대)">1모둠 (알파GO 루미구조대)</option>
+                        <option value="2모둠 (출처 레이서즈)">2모둠 (출처 레이서즈)</option>
+                        <option value="3모둠 (맥락 탐정단)">3모둠 (맥락 탐정단)</option>
+                        <option value="4모둠 (미로 브레이커)">4모둠 (미로 브레이커)</option>
+                        <option value="5모둠 (방패 메이커)">5모둠 (방패 메이커)</option>
+                        <option value="6모둠 (팩트체크 가디언즈)">6모둠 (팩트체크 가디언즈)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">게임 / 프로젝트 제목</label>
+                    <input type="text" id="upload-title" required placeholder="예: [출처 고속도로] 팩트체크 레이서 v1.2" class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">PRD 미니게임 카테고리</label>
+                    <select id="upload-category" class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-emerald-500">
+                        <option value="breaker">🧱 게임 1 — 피드 브레이커</option>
+                        <option value="racer">🏎️ 게임 2 — 출처 고속도로</option>
+                        <option value="stairs">🪜 게임 3 — 맥락의 계단</option>
+                        <option value="maze">🧩 게임 4 — 확증편향 미로</option>
+                        <option value="rescue">🛟 게임 5 — 친구구하기 작전</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">게임 설명 및 강조한 교육 원칙</label>
+                    <textarea id="upload-desc" required rows="3" placeholder="예: 출처 날짜 확인과 3초 멈춤 보류 액션을 유도하는 인터랙티브 모바일 게임입니다." class="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">HTML 파일 첨부 (.html)</label>
+                    <input type="file" id="upload-file-input" accept=".html" required onchange="handleHtmlFileSelect(event)" class="w-full text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer">
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeUploadModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold hover:bg-slate-700">취소</button>
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-500 shadow-md shadow-emerald-600/30">클라우드 웹하드 등록</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL 3: CLOUD DATABASE CONFIGURATION ================= -->
+    <div id="cloud-config-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl p-6 sm:p-7 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+                        <i class="fa-solid fa-cloud"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-white text-base">클라우드 데이터베이스 (Google Sheets API) 설정</h3>
+                        <p class="text-[11px] text-slate-400">교사의 구글 스프레드시트와 실시간 연동하여 학생 데이터를 영구 보관합니다.</p>
+                    </div>
+                </div>
+                <button onclick="closeCloudConfigModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <!-- Configuration Inputs -->
+            <div class="space-y-3.5 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-200 mb-1">
+                        Google Apps Script 웹 앱 배포 URL (Web App URL)
+                    </label>
+                    <input type="url" id="cloud-endpoint-input" placeholder="https://script.google.com/macros/s/AKfycbx.../exec" class="w-full bg-slate-950 border border-slate-700 text-slate-100 rounded-xl p-3 font-mono focus:outline-none focus:border-emerald-500 text-[11px]">
+                    <p class="text-[10px] text-slate-400 mt-1">
+                        * 비워둘 경우 브라우저 <strong>로컬 인메모리 & 자동 복원 모드</strong>로 안전하게 실행됩니다.
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <div>
+                        <span class="font-bold text-slate-200 block">자동 백그라운드 동기화 (Auto Sync)</span>
+                        <span class="text-[10px] text-slate-400">15초마다 새 게시물과 피드백을 클라우드에서 가져옵니다.</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="cloud-auto-sync" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                </div>
+
+                <!-- Teacher GAS Code Guide Box -->
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-amber-300 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-code"></i>
+                            <span>교사용 구글 스프레드시트 Apps Script 백엔드 코드</span>
+                        </span>
+                        <button onclick="copyGasCode()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold border border-slate-700">
+                            코드 복사
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-400">
+                        구글 드라이브에서 스프레드시트 생성 ➔ [확장 프로그램] ➔ [Apps Script]에 붙여넣고 [웹 앱으로 배포(액세스 권한: 모든 사용자)]하면 즉시 무료 클라우드 DB가 완성됩니다!
+                    </p>
+                    <textarea id="gas-code-sample" readonly rows="4" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-[10px] text-slate-300 font-mono resize-none focus:outline-none"></textarea>
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-between items-center">
+                <button type="button" onclick="testCloudConnection()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 rounded-xl font-bold text-xs border border-slate-700 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>연결 테스트</span>
+                </button>
+                <div class="flex space-x-2">
+                    <button type="button" onclick="closeCloudConfigModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold text-xs hover:bg-slate-700">취소</button>
+                    <button type="button" onclick="saveCloudConfig()" class="px-5 py-2 bg-emerald-600 text-white rounded-xl font-bold text-xs hover:bg-emerald-500 shadow-md shadow-emerald-600/30">설정 저장 및 연결</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Toast Notification System (No Alert/Confirm) -->
+    <div id="custom-toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 border border-emerald-500 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3">
+            <span id="toast-icon" class="text-emerald-400 text-lg"><i class="fa-solid fa-circle-check"></i></span>
+            <span id="toast-message" class="text-xs sm:text-sm font-semibold">알림 메시지</span>
+        </div>
+    </div>
+
+    <script>
+        // ================= PRD 25 VIRTUAL SEED CONTENT CARDS =================
+        const prdSeedCards = [
+            { id: 'C01', type: 'fact', claim: '기상청 공식 발표: 오늘 오후 수도권 미세먼지 주의보 발령', sourceHint: '기상청 정례 브리핑', bestActions: ['verify', 'share'], explanation: '공식 기관의 확인된 1차 자료입니다.', difficulty: 1 },
+            { id: 'C02', type: 'opinion', claim: '모든 학생은 하루 2시간 이상 AI 활용 게임을 해야만 성공한다!', sourceHint: '개인 블로그 독백', bestActions: ['pause', 'ask-context'], explanation: '개인적 주관 및 과장된 의견입니다.', difficulty: 1 },
+            { id: 'C03', type: 'satire', claim: '충격! 초콜릿만 먹어도 전교 1등 한다는 미래 영양제 개발 소식', sourceHint: '유머 게시판 풍자글', bestActions: ['pause', 'verify'], explanation: '유머/패러디 목적의 풍자성 게시물입니다.', difficulty: 1 },
+            { id: 'C04', type: 'ad', claim: '이 비타민 젤리만 먹으면 숏폼에 집중 안 해도 기억력 500% 상승 (구매링크)', sourceHint: '인플루언서 협찬 표기 누락', bestActions: ['report', 'pause'], explanation: '이해관계가 얽힌 상업 광고입니다.', difficulty: 2 },
+            { id: 'C05', type: 'image', claim: 'SNS 화제: 서울 한강에 나타난 거대 크라켄 합성 괴수 사진', sourceHint: 'AI 이미지 생성기 워터마크', bestActions: ['verify', 'pause'], explanation: '생성형 AI로 제작된 정교한 합성 사진입니다.', difficulty: 2 },
+            { id: 'C06', type: 'statistic', claim: '청소년 90%가 스마트폰 때문에 성적이 떨어졌다는 3명 대상 설문조사', sourceHint: '표본 수 n=3', bestActions: ['ask-context', 'pause'], explanation: '표본 수가 지나치게 적어 왜곡된 통계입니다.', difficulty: 2 },
+            { id: 'C07', type: 'outdated', claim: '내일부터 전국 학교 전면 원격수업 전환 안내문 캡처', sourceHint: '2020년 과거 기사 날짜', bestActions: ['verify', 'correct'], explanation: '과거의 사실이나 현재 시점에는 유효하지 않습니다.', difficulty: 2 },
+            { id: 'C08', type: 'fact', claim: '한국언론진흥재단: 청소년 미디어 이용 실태 정기 통계 조사', sourceHint: '공공 공시 보고서', bestActions: ['verify', 'compare'], explanation: '출처와 조사 방법론이 명시된 통계입니다.', difficulty: 1 },
+            { id: 'C09', type: 'opinion', claim: '알고리즘 추천은 인류의 뇌를 완전히 파괴하므로 전면 금지해야 한다', sourceHint: '온라인 커뮤니티 댓글', bestActions: ['pause', 'compare'], explanation: '단정적인 문장으로 작성된 극단적 의견입니다.', difficulty: 1 },
+            { id: 'C10', type: 'statistic', claim: '미디어 리터러시 교육 후 비판적 사고 30% 증가 (동일 집단 전후 비교)', sourceHint: '교육학 학술지 논문', bestActions: ['verify', 'share'], explanation: '비교 기준과 기간이 명확한 신뢰성 통계입니다.', difficulty: 3 }
+        ];
+
+        // ================= PRD 5-IN-1 PLAYABLE HTML GAME CODE =================
+        const playableRumiGameCode = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>알파GO : 알고리즘 피드에서 친구구하기</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, sans-serif; background-color: #030712; color: #f8fafc; }
+        .action-btn { transition: all 0.15s ease; }
+        .action-btn:active { transform: scale(0.96); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 max-w-md mx-auto">
+    <header class="bg-slate-900/90 border border-slate-800 p-3.5 rounded-2xl space-y-2">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="text-xl">🛟</span>
+                <div>
+                    <h1 class="text-xs font-black text-emerald-400">알파GO 루미 구출 작전</h1>
+                    <p class="text-[10px] text-slate-400">미션: 추천 루프에서 루미 구출</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <span id="score-text" class="text-xs font-black text-amber-400 font-mono">SCORE: 0</span>
+                <div class="text-[9px] text-slate-400">라운드 <span id="round-indicator">1</span>/5</div>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-[10px] pt-1">
+            <div class="bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                <div class="flex justify-between text-slate-400"><span>신뢰도</span><span id="meter-trust">80</span></div>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div id="bar-trust" class="bg-amber-400 h-full" style="width: 80%"></div>
+                </div>
+            </div>
+            <div class="bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                <div class="flex justify-between text-slate-400"><span>체력</span><span id="meter-hp">100</span></div>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div id="bar-hp" class="bg-emerald-400 h-full" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                <div class="flex justify-between text-slate-400"><span>편향도</span><span id="meter-bias">20%</span></div>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div id="bar-bias" class="bg-rose-500 h-full" style="width: 20%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col justify-center my-4">
+        <div id="game-card-panel" class="bg-slate-900 border-2 border-slate-700 rounded-3xl p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span id="stage-badge" class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                    게임 1 — 피드 브레이커
+                </span>
+                <span id="timer-badge" class="text-xs font-mono text-amber-300 font-bold">⏱️ 멈춤 카운트: 3s</span>
+            </div>
+            <div class="bg-slate-950 rounded-2xl p-4 border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between text-[11px] text-slate-400">
+                    <span id="card-source" class="font-mono">출처: 미확인 SNS 캡처</span>
+                    <span id="card-type-tag" class="bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-bold text-[9px]">자극적 썸네일</span>
+                </div>
+                <h3 id="card-claim-text" class="text-sm font-extrabold text-white leading-snug">
+                    "오늘 밤 당장 안 보면 계정 삭제된다?! 지금 바로 모든 친구에게 공유하세요!"
+                </h3>
+            </div>
+            <div id="action-buttons-group" class="grid grid-cols-2 gap-2 text-xs font-bold pt-2">
+                <button onclick="handleAction('share')" class="action-btn p-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-rose-300 flex items-center justify-center space-x-1.5">
+                    <span>⚡ 즉시 공유하기</span>
+                </button>
+                <button onclick="handleAction('pause')" class="action-btn p-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center space-x-1.5 shadow-md shadow-amber-500/20">
+                    <span>⏸️ 3초 멈추기</span>
+                </button>
+                <button onclick="handleAction('verify')" class="action-btn p-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center space-x-1.5">
+                    <span>🔍 출처 확인하기</span>
+                </button>
+                <button onclick="handleAction('correct')" class="action-btn p-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center space-x-1.5">
+                    <span>🛡️ 정중하게 정정하기</span>
+                </button>
+            </div>
+            <div id="feedback-overlay" class="hidden p-3.5 rounded-xl border text-xs space-y-2">
+                <div class="flex items-center justify-between">
+                    <span id="fb-title" class="font-bold"></span>
+                    <span id="fb-score-delta" class="font-mono font-bold"></span>
+                </div>
+                <p id="fb-explanation" class="text-[11px] leading-relaxed text-slate-200"></p>
+                <button onclick="nextRound()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold mt-2">
+                    다음 과제로 이동 →
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center text-[10px] text-slate-500">
+        PRD 기준: 빠른 반응보다 출처 확인과 멈춤 행동을 높게 평가합니다.
+    </footer>
+
+    <script>
+        const stages = [
+            { stage: "게임 1 — 피드 브레이커", source: "알 수 없는 바이럴 숏폼", type: "감정 자극형", claim: "분노 폭발! 특정 학교 급식에서 이상한 생물체 발견?! 당장 단톡방에 퍼뜨리세요!", best: ["pause", "verify"], explanation: "강한 분노를 유발하는 제목일수록 먼저 3초간 멈추고 원문과 사실 여부를 확인해야 합니다." },
+            { stage: "게임 2 — 출처 고속도로", source: "블로그 재인용 캡처 (작성자 불명)", type: "출처 불명", claim: "내일부터 청소년 스마트폰 야간 사용 시 과태료 부과 법안 통과 확정!", best: ["verify"], explanation: "출처가 캡처나 재인용일 경우 반드시 1차 공식 기관의 발표 날짜와 원문을 대조해야 합니다." },
+            { stage: "게임 3 — 맥락의 계단", source: "통계 인포그래픽", type: "왜곡된 통계", claim: "스마트폰을 사용하는 청소년 100%가 수면 부족 상태! (설문 대상: 야간 게이머 5명)", best: ["pause", "correct"], explanation: "숫자 뒤에 숨은 표본 수(n=5)와 분모를 확인하면 왜곡된 결론임을 알 수 있습니다." },
+            { stage: "게임 4 — 확증편향 미로", source: "알고리즘 추천 피드", type: "편향 추천", claim: "당신이 좋아할 만한 영상: 나와 같은 의견을 가진 크리에이터 10명의 연속 주장", best: ["verify", "pause"], explanation: "내 피드에 자주 보인다고 세상 전체의 의견이 아닙니다. 다른 관점의 자료를 비교하세요." },
+            { stage: "게임 5 — 친구구하기 작전", source: "루미가 보낸 카톡방 링크", type: "허위조작 의심", claim: "루미: '애들아 이거 진짜래! 지금 링크 누르고 학교 친구들한테 다 보내자!'", best: ["correct", "verify"], explanation: "친구와 갈등 없이 정중하게 '출처가 확실하지 않으니 먼저 확인해보자'고 제안하는 것이 최고의 리터러시입니다." }
+        ];
+
+        let currentRound = 0, score = 0, trust = 80, hp = 100, bias = 20;
+
+        function loadRound(idx) {
+            if(idx >= stages.length) {
+                document.getElementById('game-card-panel').innerHTML = \`
+                    <div class="text-center space-y-4 py-6">
+                        <div class="text-5xl">🎉</div>
+                        <h2 class="text-xl font-black text-emerald-400">루미 구출 성공!</h2>
+                        <p class="text-xs text-slate-300">최종 점수: <strong class="text-amber-300">\${score}점</strong></p>
+                        <div class="bg-slate-950 p-4 rounded-2xl text-left text-xs space-y-1.5 border border-slate-800">
+                            <div class="text-emerald-300 font-bold">🏅 나의 정보 습관 리포트:</div>
+                            <p class="text-slate-300">✅ 감정적인 제목에서 멈추기 실천 완료</p>
+                            <p class="text-slate-300">✅ 출처 없는 캡처를 의심하고 원문 대조</p>
+                            <p class="text-slate-300">✅ 친구에게 정중한 확인 제안 성공</p>
+                        </div>
+                        <button onclick="location.reload()" class="w-full py-3 bg-emerald-600 font-bold rounded-xl text-xs text-white">다시 플레이하기</button>
+                    </div>
+                \`;
+                return;
+            }
+            const data = stages[idx];
+            document.getElementById('stage-badge').innerText = data.stage;
+            document.getElementById('round-indicator').innerText = (idx + 1);
+            document.getElementById('card-source').innerText = "출처: " + data.source;
+            document.getElementById('card-type-tag').innerText = data.type;
+            document.getElementById('card-claim-text').innerText = data.claim;
+            document.getElementById('action-buttons-group').classList.remove('hidden');
+            document.getElementById('feedback-overlay').classList.add('hidden');
+        }
+
+        function handleAction(action) {
+            const data = stages[currentRound];
+            const isGood = data.best.includes(action);
+            const overlay = document.getElementById('feedback-overlay');
+            const title = document.getElementById('fb-title');
+            const delta = document.getElementById('fb-score-delta');
+            const desc = document.getElementById('fb-explanation');
+
+            if (isGood) {
+                score += 100;
+                trust = Math.min(100, trust + 10);
+                bias = Math.max(10, bias - 5);
+                overlay.className = "p-3.5 rounded-xl border text-xs space-y-1 bg-emerald-950/60 border-emerald-500/40 text-emerald-200";
+                title.innerText = "✨ 훌륭한 미디어 리터러시 행동!";
+                delta.innerText = "+100 SCORE";
+            } else {
+                score = Math.max(0, score - 50);
+                hp = Math.max(10, hp - 15);
+                bias = Math.min(90, bias + 10);
+                overlay.className = "p-3.5 rounded-xl border text-xs space-y-1 bg-rose-950/60 border-rose-500/40 text-rose-200";
+                title.innerText = "⚠️ 주의: 알고리즘의 함정에 빠졌습니다!";
+                delta.innerText = "-50 SCORE";
+            }
+
+            desc.innerText = data.explanation;
+            document.getElementById('action-buttons-group').classList.add('hidden');
+            overlay.classList.remove('hidden');
+
+            document.getElementById('score-text').innerText = "SCORE: " + score;
+            document.getElementById('meter-trust').innerText = trust;
+            document.getElementById('bar-trust').style.width = trust + "%";
+            document.getElementById('meter-hp').innerText = hp;
+            document.getElementById('bar-hp').style.width = hp + "%";
+            document.getElementById('meter-bias').innerText = bias + "%";
+            document.getElementById('bar-bias').style.width = bias + "%";
+        }
+
+        function nextRound() {
+            currentRound++;
+            loadRound(currentRound);
+        }
+        window.onload = function() { loadRound(0); };
+    <\/script>
+</body>
+</html>`;
+
+        // Default Seed Feed Posts Data
+        let feedPosts = [
+            {
+                id: 'post-rumi-official',
+                group: '알파GO 팀 (공식)',
+                title: '알고리즘 피드에서 친구구하기 (Official MVP)',
+                category: 'rescue',
+                categoryName: '🛟 친구구하기 작전',
+                desc: '피드폴리스 추천 루프에 갇힌 친구 루미를 구하기 위한 5단계 액션 퍼즐 미니게임 종합판입니다.',
+                author: '알파GO 개발팀',
+                date: '2026-09-27',
+                likes: 42,
+                execCount: 156,
+                fileCode: playableRumiGameCode,
+                fileName: 'save_rumi_official_mvp.html',
+                comments: [
+                    { author: '1모둠 김알파', text: '3초 멈춤과 출처 확인 게이지가 직관적이라 미디어 리터러시 수업에 아주 효과적입니다!' },
+                    { author: '3모둠 이맥락', text: '루미와의 카톡방 대화 미션에서 친구에게 정중하게 정정하는 방법이 마음에 들어요.' }
+                ]
+            },
+            {
+                id: 'post-feed-breaker',
+                group: '1모둠 (알파GO 루미구조대)',
+                title: '피드 브레이커 : 감정 미터 방패 디펜스',
+                category: 'breaker',
+                categoryName: '🧱 피드 브레이커',
+                desc: '화면 상단에서 내려오는 자극적 썸네일 카드를 3초 멈춤 방패로 막아내고 감정 미터를 70% 미만으로 유지하는 액션 게임.',
+                author: '김알파 (대표)',
+                date: '2026-09-26',
+                likes: 27,
+                execCount: 68,
+                fileCode: playableRumiGameCode,
+                fileName: 'feed_breaker_v1.html',
+                comments: [
+                    { author: '2모둠 박레이서', text: '공유 전 멈추기 타이머 사운드가 긴장감 넘칩니다!' }
+                ]
+            },
+            {
+                id: 'post-source-racer',
+                group: '2모둠 (출처 레이서즈)',
+                title: '출처 고속도로 : 3차선 팩트체크 카트 레이싱',
+                category: 'racer',
+                categoryName: '🏎️ 출처 고속도로',
+                desc: '출처 불명 캡처 차선을 피하고 원출처와 최신 날짜 표지판을 수집하여 체크포인트를 통과하는 모바일 레이싱.',
+                author: '박레이서',
+                date: '2026-09-25',
+                likes: 19,
+                execCount: 45,
+                fileCode: playableRumiGameCode,
+                fileName: 'source_racer_kart.html',
+                comments: []
+            },
+            {
+                id: 'post-context-stairs',
+                group: '3모둠 (맥락 탐정단)',
+                title: '맥락의 계단 : 왜곡된 통계 복원 퍼즐',
+                category: 'stairs',
+                categoryName: '🪜 맥락의 계단',
+                desc: '잘린 문장과 악의적으로 축소된 그래프의 표본 분모를 찾아 올바른 계단을 올라가는 리터러시 퍼즐.',
+                author: '이맥락',
+                date: '2026-09-24',
+                likes: 31,
+                execCount: 52,
+                fileCode: playableRumiGameCode,
+                fileName: 'context_stairs_puzzle.html',
+                comments: []
+            },
+            {
+                id: 'post-bias-maze',
+                group: '4모둠 (미로 브레이커)',
+                title: '확증편향 미로 : 다른 관점 카드 맞추기',
+                category: 'maze',
+                categoryName: '🧩 확증편향 미로',
+                desc: '한쪽 주장만 모으면 알고리즘 편향도가 급상승! 찬성·반대·중립 팩트 카드를 골고루 연결해 미로를 탈출하는 게임.',
+                author: '최편향',
+                date: '2026-09-23',
+                likes: 23,
+                execCount: 39,
+                fileCode: playableRumiGameCode,
+                fileName: 'bias_maze_memory.html',
+                comments: []
+            }
+        ];
+
+        // Default Submitted Feedbacks Data
+        let submittedFeedbacks = [
+            {
+                id: 'fb-01',
+                group: '1모둠 (알파GO 루미구조대)',
+                q1: '자극적이고 분노를 유발하는 제목을 만났을 때 3초간 멈추고 원문과 작성자를 확인하는 공유 전 책임 행동을 강조했습니다.',
+                q2: '모바일 환경에서 방패 터치 조작 시 애니메이션 프레임이 약간 튀는 점과 사운드 온오프 토글 지원이 미흡했습니다.',
+                q3: '총 4번 수정했습니다. 1차 감정미터 감도 조절, 2차 세로 반응형 UI 최적화, 3차 제미나이 프롬프트 데이터셋 정제, 4차 피드백 카드 설명 강화.',
+                q4: '2모둠의 출처 고속도로 레이서를 추천합니다. 3개 차선 중 출처 불명 캡처를 피하는 주행 감각이 매우 직관적이었습니다.',
+                q5: '단순히 주입식 퀴즈를 푸는 것이 아니라, PRD에서 정의한 상태값(친구 신뢰도, 편향도)을 직접 설계하고 코딩해보니 미디어 리터러시가 왜 필요한지 체감되었습니다.',
+                date: '2026-09-27 16:40'
+            },
+            {
+                id: 'fb-02',
+                group: '3모둠 (맥락 탐정단)',
+                q1: '악의적으로 편집된 통계 인포그래픽에서 표본 수(n)와 조사 기간, 비교 기준을 파악하는 비판적 분석력을 집중 교육 목표로 삼았습니다.',
+                q2: '계단 오르기 실패 시 재도전까지의 대기 시간이 길어 플레이 템포가 다소 처지는 문제가 있었습니다.',
+                q3: '총 3번 수정했습니다. 문맥 보기 힌트 팝업 추가, Tailwind 색상 대비 보강, 제미나이 캔버스 모바일 뷰포트 메타태그 수정.',
+                q4: '공식 알파GO 루미 구출 작전을 추천합니다. 친구와의 대화방에서 공격적이지 않게 확인을 권유하는 메시지 구성이 탁월했습니다.',
+                q5: '친구피드에서 다른 모둠이 올린 HTML 코드를 직접 실행해보고 즉석에서 피드백 댓글을 주고받을 수 있어서 협업 수업에 최적화된 플랫폼이었습니다.',
+                date: '2026-09-27 17:15'
+            }
+        ];
+
+        // ================= CLOUD DATABASE (GAS / REALTIME SYNC) ENGINE =================
+        const gasBackendSampleCode = `function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const feedSheet = ss.getSheetByName("Feed") || ss.insertSheet("Feed");
+  const fbSheet = ss.getSheetByName("Feedback") || ss.insertSheet("Feedback");
+  
+  const feedData = feedSheet.getDataRange().getValues();
+  const fbData = fbSheet.getDataRange().getValues();
+  
+  const feeds = [];
+  for (let i = 1; i < feedData.length; i++) {
+    if(!feedData[i][0]) continue;
+    feeds.push({
+      id: feedData[i][0], group: feedData[i][1], title: feedData[i][2],
+      category: feedData[i][3], categoryName: feedData[i][4], desc: feedData[i][5],
+      author: feedData[i][6], date: feedData[i][7], likes: feedData[i][8] || 0,
+      execCount: feedData[i][9] || 0, fileCode: feedData[i][10], fileName: feedData[i][11],
+      comments: feedData[i][12] ? JSON.parse(feedData[i][12]) : []
+    });
+  }
+  
+  const feedbacks = [];
+  for (let i = 1; i < fbData.length; i++) {
+    if(!fbData[i][0]) continue;
+    feedbacks.push({
+      id: fbData[i][0], group: fbData[i][1], q1: fbData[i][2],
+      q2: fbData[i][3], q3: fbData[i][4], q4: fbData[i][5],
+      q5: fbData[i][6], date: fbData[i][7]
+    });
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({ feeds: feeds, feedbacks: feedbacks }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const params = JSON.parse(e.postData.contents);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  if (params.type === "FEED_UPLOAD") {
+    const sheet = ss.getSheetByName("Feed") || ss.insertSheet("Feed");
+    sheet.appendRow([
+      params.id, params.group, params.title, params.category, params.categoryName,
+      params.desc, params.author, params.date, params.likes, params.execCount,
+      params.fileCode, params.fileName, JSON.stringify(params.comments || [])
+    ]);
+  } else if (params.type === "FEEDBACK_SUBMIT") {
+    const sheet = ss.getSheetByName("Feedback") || ss.insertSheet("Feedback");
+    sheet.appendRow([
+      params.id, params.group, params.q1, params.q2, params.q3,
+      params.q4, params.q5, params.date
+    ]);
+  } else if (params.type === "FEED_LIKE") {
+    const sheet = ss.getSheetByName("Feed");
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === params.id) {
+        sheet.getRange(i + 1, 9).setValue((data[i][8] || 0) + 1);
+        break;
+      }
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+        let cloudConfig = {
+            endpoint: '',
+            autoSync: true,
+            isOnline: false,
+            syncTimer: null
+        };
+
+        // Initialize Cloud Config from localStorage
+        function initCloudConfig() {
+            const savedUrl = localStorage.getItem('alphago_cloud_endpoint') || '';
+            const savedAuto = localStorage.getItem('alphago_cloud_auto_sync') !== 'false';
+            cloudConfig.endpoint = savedUrl;
+            cloudConfig.autoSync = savedAuto;
+
+            document.getElementById('cloud-endpoint-input').value = savedUrl;
+            document.getElementById('cloud-auto-sync').checked = savedAuto;
+            document.getElementById('gas-code-sample').value = gasBackendSampleCode;
+
+            if (savedUrl) {
+                updateCloudStatusUI('syncing', '클라우드 DB 동기화 중...');
+                fetchCloudDatabase(true);
+            } else {
+                updateCloudStatusUI('local', '클라우드 DB: 로컬 모드');
+            }
+
+            if (cloudConfig.autoSync) {
+                startAutoSync();
+            }
+        }
+
+        function updateCloudStatusUI(status, text) {
+            const dot = document.getElementById('cloud-status-dot');
+            const txt = document.getElementById('cloud-status-text');
+            if (!dot || !txt) return;
+
+            txt.innerText = text;
+            if (status === 'online') {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+                txt.className = "text-xs font-bold text-emerald-300";
+            } else if (status === 'syncing') {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-spin";
+                txt.className = "text-xs font-bold text-amber-300";
+            } else {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-cyan-400";
+                txt.className = "text-xs font-bold text-cyan-300";
+            }
+        }
+
+        async function fetchCloudDatabase(isInitial = false) {
+            if (!cloudConfig.endpoint) return;
+
+            try {
+                const icon = document.getElementById('sync-icon');
+                if (icon) icon.classList.add('fa-spin');
+
+                const response = await fetch(cloudConfig.endpoint);
+                const data = await response.json();
+
+                if (data.feeds && Array.isArray(data.feeds) && data.feeds.length > 0) {
+                    // Merge remote feeds with default ones avoiding duplicates
+                    const remoteIds = new Set(data.feeds.map(f => f.id));
+                    const preservedDefaults = feedPosts.filter(p => !remoteIds.has(p.id));
+                    feedPosts = [...data.feeds, ...preservedDefaults];
+                    renderFeedGrid();
+                }
+
+                if (data.feedbacks && Array.isArray(data.feedbacks) && data.feedbacks.length > 0) {
+                    const remoteFbIds = new Set(data.feedbacks.map(f => f.id));
+                    const preservedFbs = submittedFeedbacks.filter(f => !remoteFbIds.has(f.id));
+                    submittedFeedbacks = [...data.feedbacks, ...preservedFbs];
+                    renderFeedbackCards();
+                }
+
+                cloudConfig.isOnline = true;
+                updateCloudStatusUI('online', '클라우드 DB: 정상 연결');
+                updateAppStatsSummary();
+
+                if (!isInitial) {
+                    showToast("클라우드 DB와 최신 동기화되었습니다! ☁️");
+                }
+            } catch (err) {
+                cloudConfig.isOnline = false;
+                updateCloudStatusUI('local', '클라우드 DB: 오프라인 모드');
+            } finally {
+                const icon = document.getElementById('sync-icon');
+                if (icon) icon.classList.remove('fa-spin');
+            }
+        }
+
+        async function pushFeedToCloud(newPost) {
+            if (!cloudConfig.endpoint) return;
+            try {
+                await fetch(cloudConfig.endpoint, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'FEED_UPLOAD', ...newPost })
+                });
+            } catch (e) {
+                console.log('Cloud sync postponed', e);
+            }
+        }
+
+        async function pushFeedbackToCloud(newFb) {
+            if (!cloudConfig.endpoint) return;
+            try {
+                await fetch(cloudConfig.endpoint, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'FEEDBACK_SUBMIT', ...newFb })
+                });
+            } catch (e) {
+                console.log('Cloud feedback sync postponed', e);
+            }
+        }
+
+        async function pushLikeToCloud(id) {
+            if (!cloudConfig.endpoint) return;
+            try {
+                await fetch(cloudConfig.endpoint, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'FEED_LIKE', id: id })
+                });
+            } catch (e) {
+                console.log('Cloud like sync postponed', e);
+            }
+        }
+
+        function manualSyncCloud() {
+            if (!cloudConfig.endpoint) {
+                showToast("DB 설정에서 Google Apps Script URL을 먼저 입력해주세요!");
+                openCloudConfigModal();
+                return;
+            }
+            fetchCloudDatabase(false);
+        }
+
+        function startAutoSync() {
+            if (cloudConfig.syncTimer) clearInterval(cloudConfig.syncTimer);
+            cloudConfig.syncTimer = setInterval(() => {
+                if (cloudConfig.autoSync && cloudConfig.endpoint) {
+                    fetchCloudDatabase(true);
+                }
+            }, 15000);
+        }
+
+        function openCloudConfigModal() {
+            document.getElementById('cloud-config-modal').classList.remove('hidden');
+        }
+
+        function closeCloudConfigModal() {
+            document.getElementById('cloud-config-modal').classList.add('hidden');
+        }
+
+        function saveCloudConfig() {
+            const url = document.getElementById('cloud-endpoint-input').value.trim();
+            const auto = document.getElementById('cloud-auto-sync').checked;
+
+            cloudConfig.endpoint = url;
+            cloudConfig.autoSync = auto;
+
+            localStorage.setItem('alphago_cloud_endpoint', url);
+            localStorage.setItem('alphago_cloud_auto_sync', auto);
+
+            closeCloudConfigModal();
+
+            if (url) {
+                updateCloudStatusUI('syncing', '연결 확인 중...');
+                fetchCloudDatabase(false);
+            } else {
+                updateCloudStatusUI('local', '클라우드 DB: 로컬 모드');
+                showToast("로컬 브라우저 데이터베이스 모드로 전환되었습니다.");
+            }
+
+            if (auto) startAutoSync();
+            else if (cloudConfig.syncTimer) clearInterval(cloudConfig.syncTimer);
+        }
+
+        async function testCloudConnection() {
+            const url = document.getElementById('cloud-endpoint-input').value.trim();
+            if (!url) {
+                showToast("테스트할 웹 앱 URL을 입력해주세요!");
+                return;
+            }
+
+            showToast("클라우드 연결 테스트 중...");
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data) {
+                    showToast("✅ 클라우드 DB 연결 성공! 정상 작동합니다.");
+                }
+            } catch (e) {
+                showToast("⚠️ 연결 실패: Web App URL의 '모든 사용자' 배포 권한을 확인해주세요.");
+            }
+        }
+
+        function copyGasCode() {
+            const gasText = document.getElementById('gas-code-sample');
+            gasText.select();
+            document.execCommand('copy');
+            showToast("Google Apps Script 코드가 복사되었습니다! 📋");
+        }
+
+        // Global State Variables
+        let currentTab = 'feed';
+        let currentActiveHtmlCode = playableRumiGameCode;
+        let selectedUploadFile = null;
+        let activeCanvasHtmlCode = playableRumiGameCode;
+
+        window.onload = function() {
+            initCloudConfig();
+            renderFeedGrid();
+            renderAnalyticsCharts();
+            renderFeedbackCards();
+            renderArchiveCards();
+            initGeminiLiveCanvas();
+            updateAppStatsSummary();
+        };
+
+        // Tab Switching Engine
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`tab-${tabId}`);
+            if (target) target.classList.remove('hidden');
+
+            const mobileSelect = document.getElementById('mobile-nav-select');
+            if (mobileSelect) mobileSelect.value = tabId;
+
+            const navIds = ['feed', 'analytics', 'feedback', 'archive', 'gemini'];
+            navIds.forEach(id => {
+                const btn = document.getElementById(`nav-${id}`);
+                if (btn) {
+                    if (id === tabId) {
+                        btn.className = "w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl font-medium text-sm transition-all nav-tab-active group";
+                    } else {
+                        btn.className = "w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl font-medium text-sm transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white group";
+                    }
+                }
+            });
+
+            if (tabId === 'analytics') {
+                setTimeout(renderAnalyticsCharts, 120);
+            }
+        }
+
+        // Render Feed Grid
+        function renderFeedGrid(posts = feedPosts) {
+            const container = document.getElementById('feed-posts-grid');
+            if (!container) return;
+
+            container.innerHTML = posts.map(post => `
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 hover:border-slate-700 transition shadow-xl flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl">
+                                ${post.group}
+                            </span>
+                            <span class="text-[11px] text-slate-400 font-mono">
+                                <i class="fa-regular fa-calendar mr-1"></i>${post.date}
+                            </span>
+                        </div>
+
+                        <h3 class="font-extrabold text-white text-base leading-snug hover:text-emerald-300 transition cursor-pointer" onclick="executePostModal('${post.id}')">
+                            ${post.title}
+                        </h3>
+                        <p class="text-xs text-slate-300 mt-2 line-clamp-2 leading-relaxed">
+                            ${post.desc}
+                        </p>
+
+                        <div class="mt-3.5 p-2.5 bg-slate-950/80 border border-slate-800 rounded-2xl flex items-center justify-between text-xs">
+                            <div class="flex items-center space-x-2 truncate">
+                                <i class="fa-solid fa-file-code text-cyan-400 text-sm"></i>
+                                <span class="font-mono text-slate-200 font-medium truncate">${post.fileName}</span>
+                            </div>
+                            <span class="text-[10px] text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded font-bold">${post.categoryName}</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 pt-2 border-t border-slate-800/80">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3 text-xs text-slate-400">
+                                <button onclick="likeFeedPost('${post.id}')" class="hover:text-rose-400 transition flex items-center space-x-1.5">
+                                    <i class="fa-solid fa-heart text-rose-500"></i>
+                                    <span>${post.likes}</span>
+                                </button>
+                                <span class="flex items-center space-x-1">
+                                    <i class="fa-solid fa-gamepad text-emerald-400"></i>
+                                    <span>${post.execCount}회 실행</span>
+                                </span>
+                            </div>
+
+                            <button onclick="executePostModal('${post.id}')" class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl transition shadow-md shadow-emerald-600/30 flex items-center space-x-1.5 active:scale-95">
+                                <i class="fa-solid fa-circle-play text-sm"></i>
+                                <span>▶️ 실행하기</span>
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-950/60 rounded-2xl p-3 text-[11px] space-y-1.5 border border-slate-800/60">
+                            <div class="font-bold text-slate-400 flex justify-between items-center">
+                                <span>성찰 댓글 (${post.comments.length})</span>
+                                <button onclick="promptAddComment('${post.id}')" class="text-emerald-400 hover:underline text-[10px]">+ 의견 남기기</button>
+                            </div>
+                            ${post.comments.length > 0 ? post.comments.slice(0, 1).map(c => `
+                                <div class="text-slate-300 truncate">
+                                    <strong class="text-emerald-300">${c.author}:</strong> ${c.text}
+                                </div>
+                            `).join('') : '<div class="text-slate-500 italic text-[10px]">친구의 첫 게임 플레이 소감을 남겨주세요!</div>'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterFeed(cat) {
+            document.querySelectorAll('.feed-filter-btn').forEach(b => {
+                b.classList.remove('active', 'bg-emerald-600', 'text-white');
+                b.classList.add('bg-slate-800', 'text-slate-300');
+            });
+            event.target.classList.remove('bg-slate-800', 'text-slate-300');
+            event.target.classList.add('active', 'bg-emerald-600', 'text-white');
+
+            if (cat === 'all') {
+                renderFeedGrid(feedPosts);
+            } else {
+                renderFeedGrid(feedPosts.filter(p => p.category === cat));
+            }
+        }
+
+        function searchFeed() {
+            const query = document.getElementById('feed-search').value.toLowerCase();
+            const filtered = feedPosts.filter(p =>
+                p.title.toLowerCase().includes(query) ||
+                p.group.toLowerCase().includes(query) ||
+                p.desc.toLowerCase().includes(query)
+            );
+            renderFeedGrid(filtered);
+        }
+
+        function executePostModal(postId) {
+            const post = feedPosts.find(p => p.id === postId);
+            if (!post) return;
+
+            post.execCount++;
+            currentActiveHtmlCode = post.fileCode;
+            updateAppStatsSummary();
+            renderFeedGrid();
+
+            const modal = document.getElementById('rumi-game-modal');
+            const iframe = document.getElementById('rumi-interactive-iframe');
+            modal.classList.remove('hidden');
+            iframe.srcdoc = post.fileCode;
+            showToast(`'${post.title}' 게임을 실행합니다.`);
+        }
+
+        function openRumiGameModal() {
+            currentActiveHtmlCode = playableRumiGameCode;
+            const modal = document.getElementById('rumi-game-modal');
+            const iframe = document.getElementById('rumi-interactive-iframe');
+            modal.classList.remove('hidden');
+            iframe.srcdoc = playableRumiGameCode;
+            showToast("알파GO 공식 MVP 게임을 실행합니다.");
+        }
+
+        function closeRumiGameModal() {
+            document.getElementById('rumi-game-modal').classList.add('hidden');
+            document.getElementById('rumi-interactive-iframe').srcdoc = '';
+        }
+
+        function downloadActiveGameHtml() {
+            const blob = new Blob([currentActiveHtmlCode], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'alphago_media_game.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("HTML 소스 파일이 다운로드되었습니다.");
+        }
+
+        function likeFeedPost(id) {
+            const post = feedPosts.find(p => p.id === id);
+            if (post) {
+                post.likes++;
+                renderFeedGrid();
+                pushLikeToCloud(id);
+                showToast("친구 게임을 추천했습니다! ❤️");
+            }
+        }
+
+        function promptAddComment(postId) {
+            const comment = prompt("이 게임에서 배운 점이나 개선할 점을 피드백 댓글로 입력하세요:");
+            if (comment && comment.trim()) {
+                const post = feedPosts.find(p => p.id === postId);
+                if (post) {
+                    post.comments.push({ author: '1모둠 (나)', text: comment.trim() });
+                    renderFeedGrid();
+                    showToast("성찰 댓글이 등록되었습니다!");
+                }
+            }
+        }
+
+        // Charts Engine
+        let chart1Instance = null;
+        let chart2Instance = null;
+
+        function renderAnalyticsCharts() {
+            const ctx1 = document.getElementById('literacyActionChart');
+            const ctx2 = document.getElementById('miniGameRadarChart');
+            if (!ctx1 || !ctx2) return;
+
+            if (chart1Instance) chart1Instance.destroy();
+            if (chart2Instance) chart2Instance.destroy();
+
+            chart1Instance = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['멈추기(3초)', '출처·날짜 확인', '맥락·분모 복원', '관점 비교하기', '사실/의견 구분', '정정·책임 공유', '알고리즘 이해'],
+                    datasets: [{
+                        label: '학생 실천율 (%)',
+                        data: [88, 92, 74, 82, 85, 90, 79],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(6, 182, 212, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(244, 63, 94, 0.8)',
+                            'rgba(20, 184, 166, 0.8)'
+                        ],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { max: 100, ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+                        x: { ticks: { color: '#cbd5e1', font: { size: 10 } }, grid: { display: false } }
+                    }
+                }
+            });
+
+            chart2Instance = new Chart(ctx2, {
+                type: 'radar',
+                data: {
+                    labels: ['피드 브레이커', '출처 고속도로', '맥락의 계단', '확증편향 미로', '친구구하기 작전'],
+                    datasets: [
+                        {
+                            label: '1모둠 (알파GO)',
+                            data: [95, 90, 85, 88, 94],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            pointBackgroundColor: '#10b981'
+                        },
+                        {
+                            label: '전체 모둠 평균',
+                            data: [82, 86, 75, 80, 85],
+                            borderColor: '#64748b',
+                            backgroundColor: 'rgba(100, 116, 139, 0.2)',
+                            pointBackgroundColor: '#64748b'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 10 } } } },
+                    scales: {
+                        r: {
+                            grid: { color: '#1e293b' },
+                            angleLines: { color: '#334155' },
+                            pointLabels: { color: '#94a3b8', font: { size: 10 } },
+                            ticks: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Feedback Submission
+        function handleFeedbackSubmit(event) {
+            event.preventDefault();
+            const group = document.getElementById('fb-group-select').value;
+            const q1 = document.getElementById('fb-q1').value;
+            const q2 = document.getElementById('fb-q2').value;
+            const q3 = document.getElementById('fb-q3').value;
+            const q4 = document.getElementById('fb-q4').value;
+            const q5 = document.getElementById('fb-q5').value;
+
+            const newFb = {
+                id: 'fb-' + (submittedFeedbacks.length + 1),
+                group: group,
+                q1: q1,
+                q2: q2,
+                q3: q3,
+                q4: q4,
+                q5: q5,
+                date: new Date().toLocaleString('ko-KR')
+            };
+
+            submittedFeedbacks.unshift(newFb);
+            renderFeedbackCards();
+            pushFeedbackToCloud(newFb);
+            event.target.reset();
+            showToast("5가지 성찰 일지가 클라우드에 성공적으로 등록되었습니다!");
+        }
+
+        function renderFeedbackCards() {
+            const container = document.getElementById('submitted-feedback-container');
+            const countEl = document.getElementById('feedback-list-count');
+            if (!container) return;
+
+            if (countEl) countEl.innerText = `총 ${submittedFeedbacks.length}건`;
+
+            container.innerHTML = submittedFeedbacks.map(fb => `
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4.5 space-y-3 shadow-lg">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span class="text-xs font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-lg">
+                            ${fb.group}
+                        </span>
+                        <span class="text-[10px] text-slate-500 font-mono">${fb.date}</span>
+                    </div>
+
+                    <div class="space-y-2 text-xs">
+                        <div>
+                            <strong class="text-emerald-400">1. 강조한 교육 내용:</strong>
+                            <p class="text-slate-300 mt-0.5 leading-relaxed">${fb.q1}</p>
+                        </div>
+                        <div>
+                            <strong class="text-amber-300">2. 게임에서 아쉬운 부분:</strong>
+                            <p class="text-slate-300 mt-0.5 leading-relaxed">${fb.q2}</p>
+                        </div>
+                        <div>
+                            <strong class="text-cyan-300">3. 수정 횟수 및 이유:</strong>
+                            <p class="text-slate-300 mt-0.5 leading-relaxed">${fb.q3}</p>
+                        </div>
+                        <div>
+                            <strong class="text-purple-300">4. 추천하는 타모둠 게임:</strong>
+                            <p class="text-slate-300 mt-0.5 leading-relaxed">${fb.q4}</p>
+                        </div>
+                        <div>
+                            <strong class="text-rose-300">5. 자유 소감:</strong>
+                            <p class="text-slate-300 mt-0.5 leading-relaxed">${fb.q5}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Archive Rendering
+        function renderArchiveCards(filter = 'all') {
+            const container = document.getElementById('archive-display-grid');
+            if (!container) return;
+
+            let html = '';
+
+            if (filter === 'all' || filter === 'cards') {
+                prdSeedCards.forEach(c => {
+                    html += `
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-mono font-bold bg-slate-800 text-cyan-300 px-2 py-0.5 rounded">CARD ${c.id}</span>
+                                <span class="text-[10px] font-bold text-amber-400 uppercase">${c.type}</span>
+                            </div>
+                            <h4 class="font-bold text-white text-xs leading-snug line-clamp-2">"${c.claim}"</h4>
+                            <p class="text-[11px] text-slate-400">출처 힌트: ${c.sourceHint}</p>
+                            <div class="bg-slate-950 p-2 rounded-xl text-[10px] text-emerald-300 border border-slate-800">
+                                💡 판정: ${c.explanation}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            if (filter === 'all' || filter === 'files') {
+                feedPosts.forEach(f => {
+                    html += `
+                        <div class="bg-slate-900 border border-emerald-900/40 rounded-2xl p-4 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded">${f.group}</span>
+                                <span class="text-[10px] text-slate-500 font-mono">${f.date}</span>
+                            </div>
+                            <h4 class="font-bold text-white text-xs truncate">${f.title}</h4>
+                            <p class="text-[11px] text-slate-400 font-mono truncate">${f.fileName}</p>
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                                <span class="text-[10px] text-slate-400">${f.execCount}회 실행됨</span>
+                                <button onclick="executePostModal('${f.id}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-xs font-bold">
+                                    실행 / 검토
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML = html;
+        }
+
+        function filterArchive(type) {
+            document.querySelectorAll('.archive-btn').forEach(b => {
+                b.classList.remove('bg-emerald-600', 'text-white');
+                b.classList.add('bg-slate-800', 'text-slate-300');
+            });
+            event.target.classList.remove('bg-slate-800', 'text-slate-300');
+            event.target.classList.add('bg-emerald-600', 'text-white');
+            renderArchiveCards(type);
+        }
+
+        // ================= GEMINI AI & LIVE CANVAS =================
+        function initGeminiLiveCanvas() {
+            const frame = document.getElementById('gemini-live-iframe');
+            if (frame) {
+                frame.srcdoc = activeCanvasHtmlCode;
+            }
+        }
+
+        function reloadCanvasFrame() {
+            const frame = document.getElementById('gemini-live-iframe');
+            if (frame) {
+                frame.srcdoc = activeCanvasHtmlCode;
+                document.getElementById('canvas-status-display').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>새로고침 완료 (${new Date().toLocaleTimeString()})</span>`;
+                showToast("캔버스를 새로고침했습니다.");
+            }
+        }
+
+        function setCanvasViewMode(mode) {
+            const container = document.getElementById('canvas-device-container');
+            if (mode === 'mobile') {
+                container.className = "w-[360px] h-[640px] max-w-full max-h-full transition-all duration-300 flex items-center justify-center border-4 border-slate-700 rounded-3xl overflow-hidden shadow-2xl";
+                showToast("모바일 스마트폰 뷰 (360x640)로 변경되었습니다.");
+            } else {
+                container.className = "w-full h-full transition-all duration-300 flex items-center justify-center";
+                showToast("전체 반응형 뷰로 변경되었습니다.");
+            }
+        }
+
+        function toggleCanvasFullScreen() {
+            const wrapper = document.getElementById('canvas-main-wrapper');
+            if (!document.fullscreenElement) {
+                wrapper.requestFullscreen().catch(err => showToast("전체화면 전환을 지원하지 않는 브라우저입니다."));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function updatePromptTemplate() {
+            const game = document.getElementById('vibe-game-type').value;
+            const diff = document.getElementById('vibe-difficulty').value;
+            const input = document.getElementById('gemini-input-text');
+
+            const map = {
+                breaker: `PRD 7.1 피드 브레이커: 감정 미터 70% 미만 유지와 3초 멈춤 보너스 규칙이 들어간 벽돌깨기형 모바일 HTML 게임 만들어줘. 난이도=${diff}`,
+                racer: `PRD 7.2 출처 고속도로: 3개 차선에서 출처 불명 캡처를 피하고 원출처/작성자/날짜 표지판을 수집하는 카트 레이싱 모바일 웹앱 만들어줘. 난이도=${diff}`,
+                stairs: `PRD 7.3 맥락의 계단: 잘린 문장과 왜곡된 통계의 표본 수 분모를 복원하며 계단을 오르는 리터러시 퍼즐 게임 만들어줘. 난이도=${diff}`,
+                maze: `PRD 7.4 확증편향 미로: 찬성/반대/중립/원자료 카드를 균형있게 매칭해 편향도 60% 미만을 유지하는 메모리 미로 게임 만들어줘. 난이도=${diff}`,
+                rescue: `PRD 7.5 친구구하기 작전: 루미의 카톡 공유 요청에 대해 보류/원문확인/비교/정정 4개 방패로 클릭몬을 막아내는 종합 어드벤처 게임 만들어줘. 난이도=${diff}`
+            };
+
+            input.value = map[game] || "";
+        }
+
+        function injectPresetPrompt(num) {
+            const input = document.getElementById('gemini-input-text');
+            if (num === 1) input.value = "PRD 게임 1 [피드 브레이커]를 단일 HTML 파일로 코딩해줘. 3초 멈춤 버튼과 감정 미터 게이지를 포함해줘.";
+            if (num === 2) input.value = "PRD 게임 2 [출처 고속도로]를 단일 HTML 파일로 코딩해줘. 3차선 카트 조작과 날짜/작성자 검증 체크포인트를 넣어줘.";
+            if (num === 3) input.value = "PRD 게임 3 [맥락의 계단]을 단일 HTML 파일로 코딩해줘. 왜곡된 통계의 표본 기준을 찾는 퍼즐로 만들어줘.";
+            if (num === 4) input.value = "PRD 게임 5 [친구구하기 작전] 종합 모바일 웹게임을 만들어줘. 친구 루미를 구출하는 4대 방패를 구현해줘.";
+        }
+
+        async function handleGeminiPromptSubmit(event) {
+            event.preventDefault();
+            const input = document.getElementById('gemini-input-text');
+            const promptText = input.value.trim();
+            if (!promptText) return;
+
+            addGeminiChatMessage('user', promptText);
+            input.value = '';
+
+            const loadingId = addGeminiChatMessage('ai', '✨ 제미나이 AI가 PRD 규칙과 미디어 리터러시 행동을 반영하여 모바일 게임 코드를 생성하고 있습니다...');
+
+            try {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const systemInstruction = `You are an expert educational web game developer specialized in media literacy.
+Based on the PRD '알고리즘 피드에서 친구구하기' for team 알파GO:
+- Target: Mobile-first responsive single-file HTML game with Tailwind CSS and JS.
+- Key principles: Pause for 3s, verify source/date/author, check context/denominator, compare viewpoints, polite correction.
+- Always output a valid, fully runnable, single-file HTML code block containing <!DOCTYPE html> ... </html>.`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    systemInstruction: { parts: [{ text: systemInstruction }] }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+                let extractedHtml = '';
+                if (generatedText.includes('<!DOCTYPE html>') || generatedText.includes('<html')) {
+                    const match = generatedText.match(/```html([\s\S]*?)```/) || generatedText.match(/<!DOCTYPE html>[\s\S]*/);
+                    extractedHtml = match ? (match[1] || match[0]) : generatedText;
+                } else {
+                    extractedHtml = playableRumiGameCode;
+                }
+
+                activeCanvasHtmlCode = extractedHtml;
+                reloadCanvasFrame();
+
+                updateGeminiChatMessage(loadingId, '✨ 요청하신 모바일 바이브코딩 게임 코드가 생성되어 **오른쪽 실시간 캔버스**에 로드되었습니다! [클라우드 피드에 게시하기] 버튼으로 즉시 공유할 수 있습니다.');
+                document.getElementById('canvas-size-display').innerText = `HTML Code: ${extractedHtml.length} chars`;
+
+            } catch (err) {
+                setTimeout(() => {
+                    activeCanvasHtmlCode = playableRumiGameCode;
+                    reloadCanvasFrame();
+                    updateGeminiChatMessage(loadingId, '✨ PRD 표준 게임 코드가 **오른쪽 실시간 캔버스**에 로드되었습니다! 테스트 플레이 후 클라우드 피드에 공유해보세요.');
+                    document.getElementById('canvas-size-display').innerText = `HTML Code: ${activeCanvasHtmlCode.length} chars`;
+                }, 1000);
+            }
+        }
+
+        function addGeminiChatMessage(role, text) {
+            const history = document.getElementById('gemini-chat-history');
+            const msgId = 'msg-' + Date.now();
+            const isUser = role === 'user';
+
+            const div = document.createElement('div');
+            div.id = msgId;
+            div.className = `flex items-start space-x-2.5 ${isUser ? 'justify-end' : ''}`;
+
+            div.innerHTML = isUser ? `
+                <div class="bg-emerald-600 text-white rounded-2xl p-3 max-w-[85%] text-xs shadow-md">
+                    ${text}
+                </div>
+            ` : `
+                <div class="w-7 h-7 rounded-xl bg-emerald-600 flex items-center justify-center text-slate-950 font-bold text-xs shrink-0 shadow">
+                    ✨
+                </div>
+                <div class="bg-emerald-950/40 border border-emerald-800/40 rounded-2xl p-3 text-slate-200 max-w-[85%] text-xs space-y-1.5">
+                    ${text}
+                </div>
+            `;
+
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+            return msgId;
+        }
+
+        function updateGeminiChatMessage(msgId, newText) {
+            const msg = document.getElementById(msgId);
+            if (msg) {
+                const box = msg.querySelector('div:last-child');
+                if (box) box.innerHTML = newText;
+            }
+        }
+
+        function clearGeminiSession() {
+            document.getElementById('gemini-chat-history').innerHTML = `
+                <div class="flex items-start space-x-2.5">
+                    <div class="w-7 h-7 rounded-xl bg-emerald-600 flex items-center justify-center text-slate-950 font-bold text-xs shrink-0 shadow">
+                        ✨
+                    </div>
+                    <div class="bg-emerald-950/40 border border-emerald-800/40 rounded-2xl p-3 text-slate-200 max-w-[90%] text-xs">
+                        <p class="font-extrabold text-emerald-300">새로운 바이브코딩 대화 세션이 시작되었습니다! 🤖</p>
+                        <p class="text-slate-300 mt-1">PRD 기반 게임 아이디어나 추가하고 싶은 게이지 조건을 입력해주세요.</p>
+                    </div>
+                </div>
+            `;
+            activeCanvasHtmlCode = playableRumiGameCode;
+            reloadCanvasFrame();
+            showToast("새 대화 세션이 초기화되었습니다.");
+        }
+
+        function publishCanvasToSharedFeed() {
+            const title = prompt("친구피드에 공유할 게임 제목을 입력하세요:", "제미나이 바이브코딩 신규 게임");
+            if (!title) return;
+
+            const newPost = {
+                id: 'post-user-' + Date.now(),
+                group: '1모둠 (알파GO 루미구조대)',
+                title: title,
+                category: 'rescue',
+                categoryName: '🛟 친구구하기 작전',
+                desc: '제미나이 캔버스에서 바이브코딩 조건 설계를 거쳐 실시간 생성 및 검증된 최신 모바일 게임입니다.',
+                author: '1모둠 (제미나이)',
+                date: new Date().toISOString().split('T')[0],
+                likes: 1,
+                execCount: 1,
+                fileCode: activeCanvasHtmlCode,
+                fileName: 'vibe_canvas_game.html',
+                comments: []
+            };
+
+            feedPosts.unshift(newPost);
+            renderFeedGrid();
+            renderArchiveCards();
+            updateAppStatsSummary();
+            pushFeedToCloud(newPost);
+            switchTab('feed');
+            showToast("✨ 제미나이 캔버스의 게임이 클라우드 웹하드에 등록되었습니다!");
+        }
+
+        // Upload Modal Handlers
+        function openUploadModal() {
+            document.getElementById('upload-game-modal').classList.remove('hidden');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-game-modal').classList.add('hidden');
+        }
+
+        function handleHtmlFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    selectedUploadFile = {
+                        name: file.name,
+                        code: evt.target.result
+                    };
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function handleUploadSubmit(e) {
+            e.preventDefault();
+            if (!selectedUploadFile) {
+                showToast("HTML 파일을 먼저 첨부해주세요!");
+                return;
+            }
+
+            const group = document.getElementById('upload-group').value;
+            const title = document.getElementById('upload-title').value;
+            const cat = document.getElementById('upload-category').value;
+            const desc = document.getElementById('upload-desc').value;
+
+            const categoryMap = {
+                breaker: '🧱 피드 브레이커',
+                racer: '🏎️ 출처 고속도로',
+                stairs: '🪜 맥락의 계단',
+                maze: '🧩 확증편향 미로',
+                rescue: '🛟 친구구하기 작전'
+            };
+
+            const newPost = {
+                id: 'post-upload-' + Date.now(),
+                group: group,
+                title: title,
+                category: cat,
+                categoryName: categoryMap[cat] || '🎮 미니게임',
+                desc: desc,
+                author: '학생 업로더',
+                date: new Date().toISOString().split('T')[0],
+                likes: 0,
+                execCount: 1,
+                fileCode: selectedUploadFile.code,
+                fileName: selectedUploadFile.name,
+                comments: []
+            };
+
+            feedPosts.unshift(newPost);
+            renderFeedGrid();
+            renderArchiveCards();
+            updateAppStatsSummary();
+            pushFeedToCloud(newPost);
+            closeUploadModal();
+            selectedUploadFile = null;
+            e.target.reset();
+            showToast("클라우드 공유 웹하드에 성공적으로 등록되었습니다!");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('custom-toast');
+            const msgEl = document.getElementById('toast-message');
+            if (!toast || !msgEl) return;
+
+            msgEl.innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function updateAppStatsSummary() {
+            document.getElementById('header-file-count').innerText = feedPosts.length + '개';
+            document.getElementById('badge-feed-count').innerText = feedPosts.length;
+        }
+    </script>
+</body>
+</html>
